@@ -2,11 +2,14 @@ import numpy as np
 import cv2
 import pandas as pd
 
-# Open a sample video available in sample-videos
+# Open a sample videos available in sample-videos
 #vcap = cv2.VideoCapture('https://s3.amazonaws.com/ava-dataset/trainval/TzaVHtLXOzY.mkv')
+#vcap = cv2.VideoCapture('./data/videos/TzaVHtLXOzY.mkv')
 #data_frame = pd.read_csv('./data/ava_activespeaker_train_v1.0/TzaVHtLXOzY-activespeaker.csv')
-vcap = cv2.VideoCapture('https://s3.amazonaws.com/ava-dataset/trainval/P60OxWahxBQ.mkv')
-data_frame = pd.read_csv('./data/ava_activespeaker_test_v1.0/P60OxWahxBQ-activespeaker.csv')
+#vcap = cv2.VideoCapture('https://s3.amazonaws.com/ava-dataset/trainval/P60OxWahxBQ.mkv')
+#data_frame = pd.read_csv('./data/ava_activespeaker_test_v1.0/P60OxWahxBQ-activespeaker.csv')
+vcap = cv2.VideoCapture('https://s3.amazonaws.com/ava-dataset/trainval/053oq2xB3oU.mkv')
+data_frame = pd.read_csv('./data/ava_activespeaker_test_v1.0/053oq2xB3oU-activespeaker.csv')
 #if not vcap.isOpened():
 #    print "File Cannot be Opened"
 
@@ -31,6 +34,10 @@ for i, each_row in data_frame.iterrows():
         color = (0,255,0)
     elif each_row[6] == 'NOT_SPEAKING':
         color = (0,0,255)
+    elif each_row[6] == 'SPEAKING_NOT_AUDIBLE':
+        color = (124,255,0)
+    else:
+        print(each_row[6])
     #print(current_frame, prev_frame)
     if(current_frame - prev_frame > 1):
         vcap.set(1, current_frame)
@@ -42,7 +49,7 @@ for i, each_row in data_frame.iterrows():
     if frame is not None:
         # Display the resulting frame
         cv2.imshow('frame',frame)
-        # Press q to close the video windows before it ends if you want
+        # Press q to close the videos windows before it ends if you want
         if cv2.waitKey(22) & 0xFF == ord('q'):
             break
     else:
