@@ -149,6 +149,9 @@ def main(args):
     total_samples = 0
     max_disparity = 200
 
+    if(n_samples == -1):
+        n_samples = len(samples)
+
     while(total_samples < n_samples):
         random_order = np.random.choice(len(samples), len(samples), replace=False)
         for each_idx in random_order:

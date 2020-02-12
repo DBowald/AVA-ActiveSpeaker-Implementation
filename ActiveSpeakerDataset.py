@@ -37,12 +37,14 @@ class ActiveSpeakerDataset(Dataset):
                 outputs[i] = 1.0
             else:
                 outputs[i] = 0.0
-        return torch.stack(tensors), outputs, sample_path
+        return torch.stack(tensors, dim=0), outputs, sample_path
 
 
 if __name__ == "__main__":
-    dl = DataLoader(ActiveSpeakerDataset("./data/ava_activespeaker_samples/train"), shuffle=True)
+    dl = DataLoader(ActiveSpeakerDataset("./data/ava_activespeaker_samples/train"), shuffle=True, batch_size=4)
     example = next(iter(dl))
+    print(example[0].shape)
+    print(example[0].squeeze().shape)
     batch = example[0][0]
     grid = torchvision.utils.make_grid(batch, nrow=15)
     to_im = transforms.Compose([transforms.ToPILImage()])
