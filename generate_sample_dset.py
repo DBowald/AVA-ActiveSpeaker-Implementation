@@ -8,6 +8,9 @@ from argparse import ArgumentParser
 import glob
 import wget
 import pandas as pd
+import torch
+from torchvision.transforms import transforms
+from PIL import Image
 
 lookup = dict()
 for line in open('filenames.txt'):
@@ -149,6 +152,15 @@ def main(args):
     total_samples = 0
     max_disparity = 200
 
+    cahce_pictures = True
+
+    transform = transforms.Compose([
+        transforms.Grayscale(),
+        transforms.Resize((128, 128)),
+        transforms.ToTensor()#,
+#        transforms.Normalize([0.5], [0.5])
+    ])
+
     if(n_samples == -1):
         n_samples = len(samples)
 
@@ -186,7 +198,12 @@ def main(args):
                 dirname = youtube_id + "-" + str(total_samples)
                 Path(os.path.join(out_dir, dirname)).mkdir()
                 prev_frame = -1
-                for each_image in each_sample[start_idx:start_idx+frames_per_sample]:
+
+                tensors = []
+                outputs = torch.zeros(15)
+                if len(each_sample[start_idx:start_idx+frames_per_sample]) < 15:
+                    print("BWUH)")
+                for i, each_image in enumerate(each_sample[start_idx:start_idx+frames_per_sample]):
                     label = each_image[4]
                     curr_frame = each_image[1]
                     curr_time = each_image[5]
@@ -199,10 +216,20 @@ def main(args):
                     prev_frame = curr_frame
                     save_path = os.path.join(out_dir, dirname, "{}-{}.png".format(str(curr_time), label))
                     cv2.imwrite(save_path, roi)
+                    pil_roi = Image.fromarray(cv2.cvtColor(roi, cv2.COLOR_BGR2RGB))
+                    tensors.append(transform(pil_roi))
+                    if (label == "SPEAKING_AUDIBLE" or label == "SPEAKING_NOT_AUDIBLE"):
+                        outputs[i] = 1.0
+                    else:
+                        outputs[i] = 0.0
 
                 total_speaking += num_speaking
                 total_not += num_not
                 total_samples += 1
+
+                torch.save(outputs, os.path.join(out_dir, dirname, "labels.pt"))
+                img_stack = torch.stack(tensors, dim=0)
+                torch.save(img_stack, os.path.join(out_dir, dirname, "frames.pt"))
 
     print(total_speaking)
     print(total_not)
@@ -213,7 +240,7 @@ if __name__ == "__main__":
     parser = ArgumentParser()
     parser.add_argument("csv_dir", type=str)
     parser.add_argument("out_dir", type=str)
-    parser.add_argument("--n_samples", type=int, default=4000)
+    parser.add_argument("--n_samples", type=int, default=24000)
     parser.add_argument("--frames_per_sample", type=int, default=15)
     parser.add_argument("--video_dir", type=str, default="./videos")
     parser.add_argument("--overwrite_existing_dset", type=bool, default=True)

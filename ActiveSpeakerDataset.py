@@ -39,6 +39,23 @@ class ActiveSpeakerDataset(Dataset):
                 outputs[i] = 0.0
         return torch.stack(tensors, dim=0), outputs, sample_path
 
+class ActiveSpeakerCachedDataset(Dataset):
+    def __init__(self, root_dir):
+        self.samples = glob.glob(os.path.join(root_dir, '*'))
+
+    def __len__(self):
+        return len(self.samples)
+
+    def __getitem__(self, idx):
+        sample_path = self.samples[idx]
+        frames = torch.load(os.path.join(sample_path, "frames.pt"))
+        labels = torch.load(os.path.join(sample_path, "labels.pt"))
+        add = transforms.Compose([transforms.Normalize([0.5], [0.5])])
+        #frames = add(frames[0])
+        frames = frames[0]
+        return frames, labels, sample_path
+
+
 
 if __name__ == "__main__":
     dl = DataLoader(ActiveSpeakerDataset("./data/ava_activespeaker_samples/train"), shuffle=True, batch_size=4)
