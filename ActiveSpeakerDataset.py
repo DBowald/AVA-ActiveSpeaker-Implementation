@@ -5,6 +5,7 @@ from torchvision.transforms import transforms
 from PIL import Image
 import glob
 import os
+from resnets.spatial_transforms import Compose, Normalize, Scale, CenterCrop, ToTensor
 
 import numpy as np
 import cv2
@@ -50,12 +51,28 @@ class ActiveSpeakerCachedDataset(Dataset):
         sample_path = self.samples[idx]
         frames = torch.load(os.path.join(sample_path, "frames.pt"))
         labels = torch.load(os.path.join(sample_path, "labels.pt"))
-        add = transforms.Compose([transforms.Normalize([0.5], [0.5])])
+        #add = transforms.Compose([transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])])
         #frames = add(frames[0])
-        frames = frames[0]
+        #frames = frames
+
+        norm_method = Normalize([114.7748, 107.7354, 99.475], [1, 1, 1])
+
+        back_to_PIL = transforms.Compose([transforms.ToPILImage()])
+
+        spatial_transform = Compose([
+            Scale(112),
+            CenterCrop(112),
+            ToTensor(1)#, norm_method
+        ])
+
+        new_frames = []
+        for each_frame in frames:
+            each_frame = back_to_PIL(each_frame)
+            new_frames.append(spatial_transform(each_frame))
+        frames = torch.stack(new_frames)
+
+        frames = frames.permute(1,0,2,3)
         return frames, labels, sample_path
-
-
 
 if __name__ == "__main__":
     dl = DataLoader(ActiveSpeakerDataset("./data/ava_activespeaker_samples/train"), shuffle=True, batch_size=4)
@@ -63,7 +80,7 @@ if __name__ == "__main__":
     print(example[0].shape)
     print(example[0].squeeze().shape)
     batch = example[0][0]
-    grid = torchvision.utils.make_grid(batch, nrow=15)
+    grid = torchvision.utils.make_grid(batch, nrow=16)
     to_im = transforms.Compose([transforms.ToPILImage()])
     to_im(grid).show()
     print(example[1][0])

@@ -1,11 +1,12 @@
 import numpy as np
 import cv2
 import pandas as pd
+import face_recognition
 
 # Open a sample videos available in sample-videos
 #vcap = cv2.VideoCapture('https://s3.amazonaws.com/ava-dataset/trainval/TzaVHtLXOzY.mkv')
-vcap = cv2.VideoCapture('./videos/-5KQ66BBWC4.mkv')
-data_frame = pd.read_csv('./data/ava_activespeaker_train_v1.0/-5KQ66BBWC4-activespeaker.csv')
+vcap = cv2.VideoCapture('./videos/kMy-6RtoOVU.mkv')
+data_frame = pd.read_csv('./data/ava_activespeaker_test_v1.0/kMy-6RtoOVU-activespeaker.csv')
 #vcap = cv2.VideoCapture('https://s3.amazonaws.com/ava-dataset/trainval/P60OxWahxBQ.mkv')
 #data_frame = pd.read_csv('./data/ava_activespeaker_test_v1.0/P60OxWahxBQ-activespeaker.csv')
 #vcap = cv2.VideoCapture('https://s3.amazonaws.com/ava-dataset/trainval/053oq2xB3oU.mkv')

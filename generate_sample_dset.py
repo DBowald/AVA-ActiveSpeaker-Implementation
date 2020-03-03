@@ -136,6 +136,7 @@ def main(args):
     if(args.overwrite_existing_dset):
         for root,dirs,files in os.walk(args.out_dir):
             for dir in dirs:
+                #print("Removing dir: {}".format(dir))
                 shutil.rmtree(os.path.join(root,dir))
 
     csv_dir = args.csv_dir
@@ -155,8 +156,9 @@ def main(args):
     cahce_pictures = True
 
     transform = transforms.Compose([
-        transforms.Grayscale(),
-        transforms.Resize((128, 128)),
+        #transforms.Grayscale(),
+        #transforms.Resize((128, 128)),
+        transforms.Resize((224,224)),
         transforms.ToTensor()#,
 #        transforms.Normalize([0.5], [0.5])
     ])
@@ -200,8 +202,8 @@ def main(args):
                 prev_frame = -1
 
                 tensors = []
-                outputs = torch.zeros(15)
-                if len(each_sample[start_idx:start_idx+frames_per_sample]) < 15:
+                outputs = torch.zeros(frames_per_sample)
+                if len(each_sample[start_idx:start_idx+frames_per_sample]) < frames_per_sample:
                     print("BWUH)")
                 for i, each_image in enumerate(each_sample[start_idx:start_idx+frames_per_sample]):
                     label = each_image[4]
@@ -240,8 +242,8 @@ if __name__ == "__main__":
     parser = ArgumentParser()
     parser.add_argument("csv_dir", type=str)
     parser.add_argument("out_dir", type=str)
-    parser.add_argument("--n_samples", type=int, default=24000)
-    parser.add_argument("--frames_per_sample", type=int, default=15)
+    parser.add_argument("--n_samples", type=int, default=2000)
+    parser.add_argument("--frames_per_sample", type=int, default=16)
     parser.add_argument("--video_dir", type=str, default="./videos")
     parser.add_argument("--overwrite_existing_dset", type=bool, default=True)
     args = parser.parse_args()

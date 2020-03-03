@@ -6,8 +6,11 @@ from ActiveSpeakerDataset import ActiveSpeakerDataset, ActiveSpeakerCachedDatase
 from torch.utils.data import DataLoader, RandomSampler
 from torch.utils.tensorboard import SummaryWriter
 from torchvision.utils import make_grid
+import torchvision
 import datetime
 from tqdm import tqdm, trange
+from resnets.get_active_speaker_model import get_resnet_model
+
 
 softmax = torch.nn.Softmax(dim=1)
 
@@ -19,7 +22,7 @@ class Logger():
         if data_loader is not None:
             for batch in data_loader:
                 self.static_images.append(batch)
-                grid = make_grid(batch[0][0], nrow=15)
+                grid = make_grid(batch[0][0].permute(1,0,2,3), nrow=15)
                 self.writer.add_image("{}/static_image_{}".format(self.mode, batch[2][0]), grid)
             self.net = net
             self.device = device
@@ -45,9 +48,9 @@ class Logger():
 
 def main():
     M = 1
-    batch_size = 1
+    batch_size = 8
     num_workers = 4
-    num_epochs = 200
+    num_epochs = 40
     use_cuda = torch.cuda.is_available()
     device = torch.device("cuda:0" if use_cuda else "cpu")
     binary_out = True
@@ -57,22 +60,33 @@ def main():
     writer = SummaryWriter("./runs/" + str(datetime.datetime.now()).replace(" ", "_").replace(":", "-"))
 
     #net = ActiveSpeakerModel(M, binary_out=binary_out).to(device)
-    net = ActiveSpeakerTower(M).to(device)
+    #net = ActiveSpeakerTower(M).to(device)
+    #net = torchvision.models.resnet18(pretrained=True)
+    net, _ = get_resnet_model()
+
+    #net.load_state_dict(torch.load("./models/resnet-18-kinetics.pth"))
+
+    #for param in net.parameters():
+    #    param.requires_grad = False
+
+    num_ft = net.module.fc.in_features
+    net.module.fc = nn.Linear(num_ft, 2)
+    net = net.cuda()
     print(net)
     #crit = nn.BCEWithLogitsLoss()
     #crit = nn.MSELoss()
     crit = torch.nn.CrossEntropyLoss()
     #optimizer = torch.optim.SGD(net.parameters(), lr=0.003, momentum=0.9)
     #optimizer = optim.Adagrad(net.parameters(), lr=2**(-6))
-    optimizer = optim.Adam(net.parameters(), lr=0.00001)
+    optimizer = optim.Adam(net.parameters(), lr=0.001)
     scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, 'min')
 
     #train_dset = ActiveSpeakerDataset("./data/ava_activespeaker_samples/test")
-    train_dset = ActiveSpeakerCachedDataset("./data/ava_activespeaker_samples/test_cache")
+    train_dset = ActiveSpeakerCachedDataset("./data/ava_activespeaker_samples/train")
     train_loader = DataLoader(train_dset, batch_size=batch_size, shuffle=True, num_workers=num_workers)
-    val_dset = ActiveSpeakerCachedDataset("./data/ava_activespeaker_samples/test_cache")
-    #val_loader = DataLoader(val_dset, batch_size=batch_size, shuffle=True, num_workers=num_workers)
-    val_loader = DataLoader(val_dset, batch_size, sampler=RandomSampler(val_dset, replacement=True, num_samples=500))
+    val_dset = ActiveSpeakerCachedDataset("./data/ava_activespeaker_samples/test")
+    val_loader = DataLoader(val_dset, batch_size=batch_size, shuffle=True, num_workers=num_workers)
+    #val_loader = DataLoader(val_dset, batch_size, sampler=RandomSampler(val_dset, replacement=True, num_samples=500))
 
     examples_train_loader = DataLoader(train_dset, batch_size=1, sampler=RandomSampler(train_dset, replacement=True, num_samples=1))
     examples_val_loader = DataLoader(val_dset, batch_size=1, sampler=RandomSampler(val_dset, replacement=True, num_samples=1))
@@ -95,6 +109,8 @@ def main():
 
         #NOTE: SHOULD BE IN VAL
         #scheduler.step(CMA_loss)
+
+    print("All done!")
 
 
 def train_or_val(mode, data_loader_tqdm, net, device, crit, optimizer=None, binary_out=False):
